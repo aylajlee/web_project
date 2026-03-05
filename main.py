@@ -16,7 +16,16 @@ class Weather:
     
     # __str__ 함수 구현하기 
     def __str__(self):
-        return f"Weather in {self.city}: {self.temperature}° C"
+        return (f"\nWeather Observation\n"
+                f"City: {self.city}, {self.country}\n"
+                f"Latitude: {self.latitude}\n"
+                f"Longitude: {self.longitude}\n"
+                f"Temperature: {self.temperature}\n"
+                f"Elevation: {self.elevation}\n"
+                f"Windspeed: {self.windspeed}\n"
+                f"Observation time: {self.observation_time}\n"
+                )
+        
 
 # 4주차 교안처럼 error handling을 safe_get 방식으로 만들기
 def safe_get(url, **kwargs):
@@ -26,7 +35,7 @@ def safe_get(url, **kwargs):
         
         # professor said good habit (2) is ALWAYS checking ".ok"
         if user_response.ok:
-            return user_response.json()
+            return user_response # json 처리 전에 response 반환해야함 
         else:
             print("Failed:", user_response.status_code)
             return None
@@ -38,8 +47,8 @@ def safe_get(url, **kwargs):
 def main():
     # 교안에서 했던 것: URL, params, response, print("문구", response.변수)
     # 1. 입력값(도시 및 나라)  
-    city = "Suwon"
-    country = "KR"
+    city = "Chicago"
+    country = "US"
     
     # a
     
@@ -62,12 +71,13 @@ def main():
     
     # r = requests.get(URL, params={"userId": 2}, headers=headers, timeout=10)
     # 위 방식을 safe_get으로 해결할 수 있음    
-    geo_data = safe_get(geo_url, params = geo_params)
+    geo_response = safe_get(geo_url, params = geo_params)
     # 결과가 없을 경우 에러핸들링 
-    if not geo_data or "results" not in geo_data:
+    if not geo_response or not geo_response.ok or "results" not in geo_response.json():
         print("City couldn't be found.")
         return 
     
+    geo_data = geo_response.json()
     # 필요한 데이터 꺼내기 
     first_data = geo_data["results"][0]
     # 불러온 데이터에서 latitude, longitude 가져오기
@@ -95,13 +105,18 @@ def main():
     ## json_weather_response = initial_weather_response.json()
     
     ## current_weather_response = json_weather_response['current_weather']
-    initial_weather_response = safe_get(weather_url, params = weather_params)
     
-    if not initial_weather_response:
+    weather_response = safe_get(weather_url, params = weather_params)
+    
+    if not weather_response or not weather_response.ok:
         print("It is failed to retrieve weather data.")
         return 
     
-    current_weather_response = initial_weather_response['current_weather']
+    print(f'Weather Status Code: {weather_response.status_code}')
+    
+    weather_data = weather_response.json()
+    
+    current_weather = weather_data['current_weather']
     
     # c
     
@@ -112,10 +127,10 @@ def main():
         country = country,
         latitude = latitude,
         longitude = longitude,
-        temperature = current_weather_response['temperature'],
-        elevation = initial_weather_response['elevation'],
-        windspeed = current_weather_response['windspeed'],
-        observation_time = current_weather_response['time'],
+        temperature = current_weather['temperature'],
+        elevation = weather_data['elevation'],
+        windspeed = current_weather['windspeed'],
+        observation_time = current_weather['time'],
     )
     
     # print()
