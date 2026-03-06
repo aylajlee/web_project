@@ -1,4 +1,7 @@
 import requests
+
+# Flask를 가져옴 
+from routes import app
  
 class Weather:
     # information: city, country, latitude, longitude, temperature, elevation, windspeed, and observation time
@@ -140,5 +143,10 @@ def main():
     print("All object data: ", vars(user_weather))
 
 if __name__ == "__main__":
-    main()
+    ## Milestone 1 테스트용 
+    # main() 
     
+    ## Milestone 2 
+    # 여기서 서버 시작됨 
+    app.run(debug=True)
+ 

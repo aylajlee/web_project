@@ -1,40 +1,39 @@
-from flask import Flask
+# flask 기본 
+from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
-# home 홈 <전체관리용>
+# home 홈
 @app.route('/')
 def home():
     return "<h1>Weather API Server</h1><p>Milestone 2 is Running</p>"
 
-# 1. READ (전체)
-@app.route('/weather', methods=['GET'])
-def get_all_weather():
-    return "List of all weather records."
+@app.route('/ingest', methods = ['POST'])
+def ingest():
+    # 쿼리 파라미터 가져오기 
+    city = request.args.get('city')
+    country = request.args.get('country')
+    return jsonify({
+        "status": "success",
+        "message": f"Data for {city}, {country} are ready to be processed."
+    }), 200
 
+## 1. READ all (전체)
+@app.route('/observations', methods=['GET'])
+def get_all_observations():
+    return jsonify({"message": "List of all observations"}), 200
 
-# 2. READ (상세내용)
-@app.route('/weather/<int:id>', methods=['GET'])
-def get_weather(id):
-    return f"Details for weather record {id}"
+## 3. READ one (일부: 여기서는 id)
+@app.route('/observations/<int:id>', methods=['GET'])
+def get_observation_by_id(id):
+    return jsonify({"message": f"Details for observation {id}"}), 200
 
-# 3. CREATE
-@app.route('/weather', methods=['POST'])
-def create_weather():
-    return "Weather record created.", 201
+## 4. UPDATE
+@app.route('/observations/<int:id>', methods=['PUT'])
+def update_observation(id):
+    return jsonify({"message": f"Observation {id} is updated"}), 200
 
-
-# 4. UPDATE
-@app.route('/weather/<int:id>', methods=['PUT', 'POST'])
-def update_weather(id):
-    return f"Weather record {id} updated."
-
-# 5. DELETE
-@app.route('/weather/<int:id>/delete', methods=['POST'])
-def delete_weather(id):
-    return f"Weather record {id} deleted."
-
-
-if __name__ == '__main__':
-    app.run(debug=True)
-    
+## 5. DELETE
+@app.route('/observations/<int:id>', methods=['DELETE'])
+def delete_observation(id):
+    return jsonify({"message": f"Observation {id} is deleted"}), 200
