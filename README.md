@@ -78,11 +78,11 @@ web_project/
 
 ## Technologies Used
 
-- Python 3
+- Python 3.8+
 - Requests
-- PostgreSQL
+- PostgreSQL database
 - PgAdmin4
-- GitHub
+- Git
 - VS Code
 - Open-Meteo API
 

@@ -1,8 +1,20 @@
 import requests
+import os
+from dotenv import load_dotenv
+import psycopg
 
-# Flask를 가져옴 
+# Import the Flask app
 from routes import app
+
+## Milestone 3
+load_dotenv()
+DB_NAME = os.getenv("DB_NAME")
+DB_USER = os.getenv("DB_USER")
+DB_PASSWORD = os.getenv("DB_PASSWORD")
+DB_HOST = os.getenv("DB_HOST")
+DB_PORT = os.getenv("DB_PORT")
  
+## Milestone 1 and 2
 class Weather:
     # information: city, country, latitude, longitude, temperature, elevation, windspeed, and observation time
     def __init__(self, city, country, latitude, longitude, temperature, elevation, windspeed, observation_time):
@@ -29,16 +41,15 @@ class Weather:
                 f"Observation time: {self.observation_time}\n"
                 )
         
-
-# 4주차 교안처럼 error handling을 safe_get 방식으로 만들기
+# Make safe_get using error handling like in the lecture [Week 4]
 def safe_get(url, **kwargs):
     try:
-        # professor said good habit (1) is setting a timeout to avoid hanging)
+        # Good habit: set a timeout so the request does not hang
         user_response = requests.get(url, timeout=10, **kwargs)
         
-        # professor said good habit (2) is ALWAYS checking ".ok"
+        # Good habit: always check ".ok"
         if user_response.ok:
-            return user_response # json 처리 전에 response 반환해야함 
+            return user_response
         else:
             print("Failed:", user_response.status_code)
             return None
@@ -46,10 +57,94 @@ def safe_get(url, **kwargs):
     except requests.exceptions.RequestException as e:
         print("Network error:", e)
         return None
+    
+def get_connection():
+    # return psycopg.Connection 
+    return psycopg.connect(
+        dbname=DB_NAME,
+        user=DB_USER,
+        password=DB_PASSWORD,
+        host=DB_HOST,
+        port=DB_PORT,
+    )
+ 
+def save_observation(city, country, latitude, longitude, temperature, elevation, windspeed, observation_time):
+    try:
+        with get_connection() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    # INSERT INTO observations (city, country, latitude, longitude, temperature, elevation, windspeed, observation_time)
+                    # VALUES (%s, %s, %s, %s, %s, %s, %s, %s) 
+                    (city, country, latitude, longitude, temperature, elevation, windspeed, observation_time),
+                )
+                connection.commit()
+    except Exception as e:
+        print("DB insert error:", e)
 
+def count_observations():
+    try:
+        with get_connection() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT COUNT(*) FROM observations;")
+                return cursor.fetchone()[0]
+    except Exception as e:
+        print("DB count error:", e)
+        return 0
+
+
+def average_temperature():
+    try:
+        with get_connection() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT AVG(temperature) FROM observations;")
+                return cursor.fetchone()[0]
+    except Exception as e:
+        print("DB avg error:", e)
+        return None
+ 
+def min_temperature():
+    try:
+        with get_connection() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT MIN(temperature) FROM observations;")
+                return cursor.fetchone()[0]
+    except Exception as e:
+        print("DB min error:", e)
+        return None
+
+
+def max_temperature():
+    try:
+        with get_connection() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT MAX(temperature) FROM observations;")
+                return cursor.fetchone()[0]
+    except Exception as e:
+        print("DB max error:", e)
+        return None
+
+def count_by_city():
+    try:
+        with get_connection() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT city, COUNT(*)
+                    FROM observations
+                    GROUP BY city
+                    ORDER BY city;
+                    """
+                    )
+                return cursor.fetchall()
+    except Exception as e:
+        print("DB group by error:", e)
+        return []
+                    
+                    
+                    
+                              
 def main():
-    # 교안에서 했던 것: URL, params, response, print("문구", response.변수)
-    # 1. 입력값(도시 및 나라)  
+    # Input values for city and country  
     city = "Chicago"
     country = "US"
     
@@ -141,7 +236,24 @@ def main():
     print(user_weather)
     
     print("All object data: ", vars(user_weather))
-
+    
+    save_observation(
+        user_weather.city,
+        user_weather.country,
+        user_weather.latitude,
+        user_weather.longitude,
+        user_weather.temperature,
+        user_weather.elevation,
+        user_weather.windspeed,
+        user_weather.observation_time,
+    )
+    
+    print("Total observations:", count_observations())
+    print("Average temperature:", average_temperature())
+    print("Min temperature:", min_temperature())
+    print("Max temperature:", max_temperature())
+    print("Count by city:", count_by_city())
+    
 if __name__ == "__main__":
     ## Milestone 1 테스트용 
     # main() 
