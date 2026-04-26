@@ -1,1 +1,4 @@
-.class
+.env
+.projectvenv/
+__pycache__/
+*.pyc

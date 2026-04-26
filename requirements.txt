@@ -1,4 +1,5 @@
 Flask
+uvicorn
 requests
 python-dotenv
 psycopg[binary]
