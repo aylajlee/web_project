@@ -1,12 +1,9 @@
 import requests
-from fastapi import FastAPI, HTTPException, Request
-from fastapi.templating import Jinja2Templates
+from flask import Flask, request, jsonify, render_template
 from database import DatabaseManager, WeatherObservation
 
-app = FastAPI()
-
+app = Flask(__name__)
 db = DatabaseManager()
-templates = Jinja2Templates(directory="templates")
 
 def get_weather_data(city, country):
     # Geocoding: 도시명, 국가명으로 위도, 경도를 찾음 
@@ -44,63 +41,68 @@ def get_weather_data(city, country):
         "windspeed": data['current_weather']['windspeed'], "observation_time": data['current_weather']['time']
     }
 
-@app.get("/")
-def read_root(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+@app.route("/", methods=["GET"])
+def read_root():
+    return render_template("index.html")
 
-# POST /ingest: 외부날씨데이터를 가져와서 DB에 저장 
-@app.post("/ingest")
-def ingest(city: str, country: str):
+
+# POST /ingest
+# 외부날씨데이터를 가져와서 DB에 저장 
+@app.route("/ingest", methods=["POST"])
+def ingest():
+    city = request.args.get("city")
+    country = request.args.get("country")
     data = get_weather_data(city, country)
     
     # 데이터가 없으면 400 Bad request 반환 
     if not data: 
-        raise HTTPException(status_code=400, 
-                            detail="Data not found")
-    # # DB 삽입하고 새로 생성된 id를 받음 
-    # new_id = WeatherObservation.insert(data)
-    # # 응답 데이터에 id 추가 
-    # data["id"] = new_id
-    # return data
+        return jsonify({"error": "Data not found"}), 400
+        
     # ORM 생성 및 저장
     obs = WeatherObservation(db, **data)
     obs.save()
-    return {"id": obs.id, **data}
+    return jsonify({"id": obs.id, **data}), 200
 
 # 전체 데이터 조회 
-@app.get("/observations")
+@app.route("/observations", methods=["GET"])
 def get_all():
-    # return [vars(obs) for obs in WeatherObservation.all(db)]
     obs_list = WeatherObservation.all(db)
     # db 객체 빼고 
-    return [{k: v for k, v in vars(o).items() if k != 'db'} for o in obs_list]
+    results = [{k: v for k, v in vars(o).items() if k != 'db'} for o in obs_list]
+    return jsonify(results)
 
 # 특정id 데이터 조회 
-@app.get("/observations/{id}")
-def get_one(id: int):
+@app.route("/observations/<int:id>", methods=["GET"])
+def get_one(id):
     obs = WeatherObservation.find_by_id(db, id)
-    if not obs: raise HTTPException(status_code=404, detail="Not found")
+    if not obs: 
+        return jsonify({"error": "Not found"}), 404
     # db 객체 빼고 
-    return {k: v for k, v in vars(obs).items() if k != 'db'}
+    return jsonify({k: v for k, v in vars(obs).items() if k != 'db'})
 
 # id의 notes 수정 
-@app.put("/observations/{id}")
-def update_note(id: int, notes: str):
+@app.route("/observations/<int:id>", methods=["PUT"])
+def update_note(id):
+    data = request.get_json()
+    notes = data.get("notes")
+    
     obs = WeatherObservation.find_by_id(db, id)
-    if not obs: raise HTTPException(status_code=404, detail="Not found")
+    if not obs: 
+        return jsonify({"error": "Not found"}), 404
+        
     obs.notes = notes
     obs.save()
-    return {"id": id, "notes": notes}
+    return jsonify({"id": id, "notes": notes})
 
 # id 데이터 삭제 
-@app.delete("/observations/{id}")
-def delete_obs(id: int):
+@app.route("/observations/<int:id>", methods=["DELETE"])
+def delete_obs(id):
     obs = WeatherObservation.find_by_id(db, id)
-    if not obs: raise HTTPException(status_code=404, detail="Not found")
+    if not obs: 
+        return jsonify({"error": "Not found"}), 404
     obs.delete()
-    return {"deleted": id}
+    return jsonify({"deleted": id})
 
 # 서버 실행 
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    app.run(debug=True, port=8000)
