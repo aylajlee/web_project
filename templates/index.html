@@ -1,10 +1,61 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Weather App</title>
-</head>
-<body>
-    <h1>Weather Observation Service</h1>
-    <p>This is the main page for the weather service.</p>
-</body>
-</html>
+{% extends 'base.html' %} 
+
+{% block content %} 
+<style> 
+    body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; } 
+    .container { max-width: 1200px; margin: auto; } 
+    .add-form { background: #f4f4f4; padding: 20px; border-radius: 8px; margin-bottom: 20px; } 
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9em; } 
+    th, td { padding: 8px; border: 1px solid #ddd; text-align: left; } 
+    th { background-color: #333; color: white; } 
+    input[type="text"] { padding: 5px; width: 100px; } 
+    button { padding: 5px 10px; cursor: pointer; } 
+</style> 
+
+<div class="container"> 
+    <div class="add-form"> 
+        <h3>Search & Add City</h3> 
+        <form action="/ingest" method="POST"> 
+            <input type="text" name="city" placeholder="City" required> 
+            <input type="text" name="country" placeholder="Country" required> 
+            <button type="submit">Fetch Weather Data</button> 
+        </form> 
+    </div> 
+    
+    <table> 
+        <thead> 
+            <tr> 
+                <th>ID</th> <th>City</th> <th>Country</th> <th>Lat</th> <th>Lon</th> 
+                <th>Temp(°C)</th> <th>Wind</th> <th>Time</th> <th>Notes</th> <th>Action</th> 
+            </tr> 
+        </thead> 
+        <tbody> 
+            {% for obs in observations %} 
+            <tr> 
+                <td>{{ obs.id }}</td>
+                <td>{{ obs.city }}</td>
+                <td>{{ obs.country }}</td>
+                <td>{{ obs.latitude }}</td>
+                <td>{{ obs.longitude }}</td>
+                <td>{{ obs.temperature }}</td>
+                <td>{{ obs.windspeed }}</td>
+                <td>{{ obs.observation_time }}</td>
+                <td> 
+                    <form action="/observations/{{ obs.id }}" method="POST"> 
+                        <input type="text" name="notes" value="{{ obs.notes or '' }}"> 
+                        <button type="submit">Update</button> 
+                    </form> 
+                </td> 
+                <td> 
+                    <form action="/observations/delete/{{ obs.id }}" method="POST"> 
+                        <button type="submit" style="color: red;">Delete</button> 
+                    </form> 
+                </td> 
+            </tr> 
+            {% else %} 
+            <tr><td colspan="10">No data found. Please add a city above!</td></tr> 
+            {% endfor %} 
+        </tbody> 
+    </table> 
+</div> 
+{% endblock %}

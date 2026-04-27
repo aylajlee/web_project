@@ -4,9 +4,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# 비밀번호 확인 
-# print("DEBUG: DB_PASSWORD:", os.getenv("DB_PASSWORD"))
-
 class DatabaseManager:
     def __init__(self):
         self.connection_string = (
@@ -20,36 +17,11 @@ class DatabaseManager:
     def get_connection(self):
         return psycopg.connect(self.connection_string)
 
-class BaseModel:
-    TABLE_NAME = ""
-
-    def __init__(self, db_manager):
-        self.db = db_manager
-        self.id = None
-
-    def save(self):
-        if self.id is None:
-            return self._insert()
-        else:
-            return self._update()
-
-    def _insert(self): raise NotImplementedError
-    
-    def _update(self): raise NotImplementedError
-    
-    def delete(self): raise NotImplementedError
-
-class WeatherObservation(BaseModel):
+class WeatherObservation:
     TABLE_NAME = "weather_observation"
 
-    def __init__(self, db_manager, city, country, 
-                 latitude, longitude, 
-                 temperature, elevation, windspeed,
-                 observation_time, 
-                 notes=None, id=None):
-        
-        super().__init__(db_manager)
-        
+    def __init__(self, db_manager, city, country, latitude, longitude, temperature, elevation, windspeed, observation_time, notes=None, id=None):
+        self.db = db_manager
         self.id = id
         self.city = city
         self.country = country
@@ -61,27 +33,60 @@ class WeatherObservation(BaseModel):
         self.observation_time = observation_time
         self.notes = notes
 
-    def _insert(self):
+    def save(self):
         with self.db.get_connection() as conn:
             with conn.cursor() as cur:
-                query = f"""
-                INSERT INTO {self.TABLE_NAME} (city, country, latitude, longitude, 
-                            temperature, elevation, windspeed, observation_time, notes)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id
-                """
-                cur.execute(query, (self.city, self.country, self.latitude, self.longitude, 
-                                    self.temperature, self.elevation, self.windspeed, self.observation_time, self.notes))
-                self.id = cur.fetchone()[0]
+                if self.id is None:
+                    # 데이터 삽입 및 생성된 ID 반환
+                    query = f"""
+                        INSERT INTO {self.TABLE_NAME} 
+                        (city, country, latitude, longitude, temperature, elevation, windspeed, observation_time, notes) 
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) 
+                        RETURNING id
+                    """
+                    cur.execute(query, (
+                        self.city, self.country, self.latitude, self.longitude, 
+                        self.temperature, self.elevation, self.windspeed, 
+                        self.observation_time, self.notes
+                    ))
+                    
+                    # RETURNING id 값을 self.id에 저장
+                    result = cur.fetchone()
+                    if result:
+                        self.id = result[0]
+                else:
+                    # 기존 데이터의 notes 업데이트
+                    query = f"UPDATE {self.TABLE_NAME} SET notes = %s WHERE id = %s"
+                    cur.execute(query, (self.notes, self.id))
+                
+                # 커밋을 호출하여 DB에 최종 반영
                 conn.commit()
         return self
 
-    def _update(self):
-        with self.db.get_connection() as conn:
+
+    @classmethod
+    def all(cls, db_manager):
+        with db_manager.get_connection() as conn:
             with conn.cursor() as cur:
-                query = f"UPDATE {self.TABLE_NAME} SET notes = %s WHERE id = %s"
-                cur.execute(query, (self.notes, self.id))
-                conn.commit()
-        return self
+                cur.execute(f"SELECT id, city, country, latitude, longitude, temperature, elevation, windspeed, observation_time, notes FROM {cls.TABLE_NAME}")
+                rows = cur.fetchall()
+                # r[0]은 id로, r[1:]은 나머지 속성으로 전달
+                return [cls(db_manager, *r[1:], id=r[0]) for r in rows]
+
+    @classmethod
+    def get_by_id(cls, db_manager, id):
+        with db_manager.get_connection() as conn:
+            with conn.cursor() as cur:
+                query = f"SELECT id, city, country, latitude, longitude, temperature, elevation, windspeed, observation_time, notes FROM {cls.TABLE_NAME} WHERE id = %s"
+                cur.execute(query, (id,))
+                row = cur.fetchone()
+                if row:
+                    return cls(db_manager, *row[1:], id=row[0])
+                return None
+
+    def update_notes(self, notes):
+        self.notes = notes
+        self.save()
 
     def delete(self):
         with self.db.get_connection() as conn:
@@ -89,22 +94,3 @@ class WeatherObservation(BaseModel):
                 query = f"DELETE FROM {self.TABLE_NAME} WHERE id = %s"
                 cur.execute(query, (self.id,))
                 conn.commit()
-                return True
-
-    @classmethod
-    def find_by_id(cls, db_manager, obs_id):
-        with db_manager.get_connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute(f"SELECT * FROM {cls.TABLE_NAME} WHERE id = %s", (obs_id,))
-                row = cur.fetchone()
-                if row:
-                    return WeatherObservation(db_manager, *row[1:], id=row[0])
-        return None
-
-    @classmethod
-    def all(cls, db_manager):
-        with db_manager.get_connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute(f"SELECT * FROM {cls.TABLE_NAME}")
-                rows = cur.fetchall()
-                return [WeatherObservation(db_manager, *r[1:], id=r[0]) for r in rows]

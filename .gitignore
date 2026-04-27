@@ -1,5 +1,6 @@
 .env
-.projectvenv/
+# .class
 __pycache__/
-*.pyc
+.projectvenv/
+venv/
 templates.zip
