@@ -10,10 +10,12 @@ def get_weather_data(city, country):
         # 1. Geocoding API
         geo_url = "https://geocoding-api.open-meteo.com/v1/search"
         res = requests.get(geo_url, params={"name": city, "count": 1})
-        if res.status_code != 200: return None
+        if res.status_code != 200:
+            return None
         
         res_data = res.json()
-        if "results" not in res_data or not res_data["results"]: return None
+        if "results" not in res_data or not res_data["results"]:
+            return None
         geo = res_data["results"][0]
 
         # 2. Weather API
@@ -23,7 +25,8 @@ def get_weather_data(city, country):
             "longitude": geo['longitude'],
             "current_weather": "true"
         })
-        if w_res.status_code != 200: return None
+        if w_res.status_code != 200:
+            return None
         
         w_data = w_res.json()
         current = w_data["current_weather"]
@@ -33,81 +36,98 @@ def get_weather_data(city, country):
             "country": country,
             "latitude": geo['latitude'],
             "longitude": geo['longitude'],
-            "temperature": current['temperature'],
-            "elevation": int(geo.get('elevation', 0)),
-            "windspeed": current['windspeed'],
+            "temperature_c": current['temperature'],
+            "windspeed_kmh": current['windspeed'],
             "observation_time": current['time']
         }
     except Exception as e:
-        print(f"Internal error: {e}")
+        print(f"External API Error: {e}")
         return None
 
-# HTML
+# HTML View (Dashboard)
 @app.route("/", methods=["GET"])
 def index():
     observations = WeatherObservation.all(db)
     return render_template("index.html", observations=observations)
 
+# API Endpoints
+# 1. Create - Ingest Weather
 @app.route("/ingest", methods=["POST"])
 def ingest():
-    city = request.form.get("city")
-    country = request.form.get("country")
-    data = get_weather_data(city, country)
-    if not data: return "Failed to fetch data", 400
+    # Query parameter(?city=)
+    # Form data(HTML) 
+    city = request.args.get("city") or request.form.get("city")
+    country = request.args.get("country") or request.form.get("country")
     
+    if not city or not country:
+        return jsonify({"error": "Missing city or country"}), 400
+        
+    data = get_weather_data(city, country)
+    if not data:
+        return jsonify({"error": "Failed to fetch weather data"}), 400
+        
     obs = WeatherObservation(db, **data)
     obs.save()
-    return redirect(url_for("index"))
+    
+    # HTML -> redirect
+    # API -> JSON
+    if request.form:
+        return redirect(url_for("index"))
+    
+    result = {k: v for k, v in vars(obs).items() if k != 'db'}
+    return jsonify(result), 200
 
-# JSON API 
-
-# 전체 조회 (GET /observations)
+# 2. Read - List all observations (GET /observations)
 @app.route("/observations", methods=["GET"])
 def get_all():
     obs_list = WeatherObservation.all(db)
-    # db 객체 제외 
-    # 딕셔너리 형태로 변환
     results = [{k: v for k, v in vars(o).items() if k != 'db'} for o in obs_list]
     return jsonify(results), 200
 
-# 특정ID 조회 (GET /observations/<id>)
+# 3. Read - Retrieve by ID (GET /observations/{id})
 @app.route("/observations/<int:id>", methods=["GET"])
 def get_one(id):
-    obs = WeatherObservation.get_by_id(db, id) 
-    if not obs: return jsonify({"error": "Not found"}), 404
+    obs = WeatherObservation.get_by_id(db, id)
+    if not obs:
+        return jsonify({"error": "Not found"}), 404
     return jsonify({k: v for k, v in vars(obs).items() if k != 'db'}), 200
 
-# 메모 수정 (PUT /observations/<id> - JSON )
-@app.route("/observations/<int:id>", methods=["PUT"])
-def update_json(id):
-    data = request.get_json()
-    notes = data.get("notes")
+# 4. Update - Modify notes field (PUT /observations/{id})
+# HTML (POST)
+# API (PUT) 
+@app.route("/observations/<int:id>", methods=["PUT", "POST"])
+def update_observation(id):
     obs = WeatherObservation.get_by_id(db, id)
-    if not obs: return jsonify({"error": "Not found"}), 404
+    if not obs:
+        return jsonify({"error": "Not found"}), 404
+        
+    if request.method == "PUT":
+        # API JSON 
+        data = request.get_json()
+        notes = data.get("notes")
+    else:
+        # HTML
+        notes = request.form.get("notes")
+        
     obs.update_notes(notes)
-    return jsonify({"id": id, "notes": notes}), 200
+    
+    if request.method == "PUT":
+        return jsonify({"id": id, "notes": notes}), 200
+    return redirect(url_for("index"))
 
-# 삭제 (DELETE /observations/<id> - JSON)
+# 5. Delete - Remove observation (DELETE /observations/{id})
 @app.route("/observations/<int:id>", methods=["DELETE"])
-def delete_json(id):
+def delete_observation(id):
     obs = WeatherObservation.get_by_id(db, id)
-    if not obs: return jsonify({"error": "Not found"}), 404
+    if not obs:
+        return jsonify({"error": "Not found"}), 404
     obs.delete()
     return jsonify({"deleted": id}), 200
 
-# 기존 HTML Update/Delete
-@app.route("/observations/<int:id>", methods=["POST"])
-def update_form(id):
-    notes = request.form.get("notes")
-    obs = WeatherObservation.get_by_id(db, id)
-    if obs: obs.update_notes(notes)
-    return redirect(url_for("index"))
-
+# HTML 삭제 (POST /observations/delete/{id})
 @app.route("/observations/delete/<int:id>", methods=["POST"])
 def delete_form(id):
     obs = WeatherObservation.get_by_id(db, id)
-    if obs: obs.delete()
+    if obs:
+        obs.delete()
     return redirect(url_for("index"))
-
-if __name__ == "__main__":
-    app.run(debug=True, port=8000)

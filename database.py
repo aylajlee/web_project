@@ -20,16 +20,16 @@ class DatabaseManager:
 class WeatherObservation:
     TABLE_NAME = "weather_observation"
 
-    def __init__(self, db_manager, city, country, latitude, longitude, temperature, elevation, windspeed, observation_time, notes=None, id=None):
+    def __init__(self, db_manager, city, country, latitude, longitude, 
+                 temperature_c, windspeed_kmh, observation_time, notes=None, id=None):
         self.db = db_manager
         self.id = id
         self.city = city
         self.country = country
         self.latitude = latitude
         self.longitude = longitude
-        self.temperature = temperature
-        self.elevation = elevation
-        self.windspeed = windspeed
+        self.temperature_c = temperature_c
+        self.windspeed_kmh = windspeed_kmh
         self.observation_time = observation_time
         self.notes = notes
 
@@ -37,38 +37,37 @@ class WeatherObservation:
         with self.db.get_connection() as conn:
             with conn.cursor() as cur:
                 if self.id is None:
-                    # 데이터 삽입 및 생성된 ID 반환
                     query = f"""
                         INSERT INTO {self.TABLE_NAME} 
-                        (city, country, latitude, longitude, temperature, elevation, windspeed, observation_time, notes) 
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) 
+                        (city, country, latitude, longitude, temperature_c, windspeed_kmh, observation_time, notes) 
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s) 
                         RETURNING id
                     """
-                    cur.execute(query, (
-                        self.city, self.country, self.latitude, self.longitude, 
-                        self.temperature, self.elevation, self.windspeed, 
-                        self.observation_time, self.notes
-                    ))
                     
-                    # RETURNING id 값을 self.id에 저장
+                    cur.execute(query, (
+                        self.city, 
+                        self.country, 
+                        self.latitude, 
+                        self.longitude, 
+                        self.temperature_c, 
+                        self.windspeed_kmh, 
+                        self.observation_time, 
+                        self.notes
+                    ))
                     result = cur.fetchone()
                     if result:
                         self.id = result[0]
                 else:
-                    # 기존 데이터의 notes 업데이트
                     query = f"UPDATE {self.TABLE_NAME} SET notes = %s WHERE id = %s"
                     cur.execute(query, (self.notes, self.id))
-                
-                # 커밋을 호출하여 DB에 최종 반영
                 conn.commit()
         return self
-
 
     @classmethod
     def all(cls, db_manager):
         with db_manager.get_connection() as conn:
             with conn.cursor() as cur:
-                cur.execute(f"SELECT id, city, country, latitude, longitude, temperature, elevation, windspeed, observation_time, notes FROM {cls.TABLE_NAME}")
+                cur.execute(f"SELECT id, city, country, latitude, longitude, temperature_c, windspeed_kmh, observation_time, notes FROM {cls.TABLE_NAME}")
                 rows = cur.fetchall()
                 # r[0]은 id로, r[1:]은 나머지 속성으로 전달
                 return [cls(db_manager, *r[1:], id=r[0]) for r in rows]
@@ -77,7 +76,7 @@ class WeatherObservation:
     def get_by_id(cls, db_manager, id):
         with db_manager.get_connection() as conn:
             with conn.cursor() as cur:
-                query = f"SELECT id, city, country, latitude, longitude, temperature, elevation, windspeed, observation_time, notes FROM {cls.TABLE_NAME} WHERE id = %s"
+                query = f"SELECT id, city, country, latitude, longitude, temperature_c, windspeed_kmh, observation_time, notes FROM {cls.TABLE_NAME} WHERE id = %s"
                 cur.execute(query, (id,))
                 row = cur.fetchone()
                 if row:

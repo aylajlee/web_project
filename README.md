@@ -1,17 +1,17 @@
-# Juyeon Lee's Local Weather Tracker 🌤
+# Juyeon's Local Weather Tracker 🌤
 
 A Python application that fetches real-time weather data from the Open-Meteo API and stores weather observations in a PostgreSQL database using an ORM-based pattern. Built for **CSIS 1230 - Programming for Everyone II**.
 
 ## Features
-- **Live Weather**: Fetches real-time data (temperature, windspeed, timestamp) using the Open-Meteo API.
-- **Automatic Geocoding**: Automatically converts city and country names into Latitude and Longitude coordinates.
-- **Data Persistence**: Stores observations securely in a PostgreSQL database with a structured schema.
-- **ORM-based Pattern**: Implements object-oriented principles for database interaction (`WeatherObservation` class).
+- **Live Weather**: Fetches real-time data using the Open-Meteo API.
+- **Automatic Geocoding**: Automatically converts city names into coordinates.
+- **Data Persistence**: Stores observations securely in PostgreSQL.
+- **ORM-based Pattern**: Uses the `WeatherObservation` class for clean database interactions.
 - **Full CRUD Interface**:
-  - **Create**: Ingest and save new weather data.
-  - **Read**: View all observations via HTML dashboard or JSON API.
-  - **Update**: Modify personal notes for specific weather records.
-  - **Delete**: Remove observations from the database.
+  - **Create**: Ingest new data via HTML form or API (`/ingest`).
+  - **Read**: View records on the Dashboard or fetch as **JSON** via `/observations`.
+  - **Update**: Modify personal notes using **PUT** or HTML forms.
+  - **Delete**: Remove records using **DELETE** or the Dashboard.
 
 ## Installation
 
@@ -43,17 +43,18 @@ A Python application that fetches real-time weather data from the Open-Meteo API
    ```
 
 4. **Initialize the database:**
-   Run the following SQL in your PostgreSQL tool:
+   Run the following SQL to create the table in your PostgreSQL tool:
    ```sql
+   DROP TABLE IF EXISTS weather_observation CASCADE;
+
    CREATE TABLE weather_observation (
        id SERIAL PRIMARY KEY,
        city VARCHAR(100) NOT NULL,
        country VARCHAR(50) NOT NULL,
        latitude DECIMAL(10, 8) NOT NULL,
        longitude DECIMAL(11, 8) NOT NULL,
-       temperature DECIMAL(5, 2),
-       elevation FLOAT,
-       windspeed DECIMAL(5, 2),
+       temperature_c DECIMAL(5, 2),
+       windspeed_kmh DECIMAL(5, 2),
        observation_time VARCHAR(100),
        notes TEXT
    );
@@ -70,11 +71,11 @@ Then open your browser and go to: [http://127.0.0.1:8000](http://127.0.0.1:8000)
 
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
-| **POST** | `/ingest` | Fetches live weather, saves it to DB, and redirects. |
-| **GET** | `/observations` | Retrieves all stored observations in **JSON** format. |
+| **POST** | `/ingest` | Fetches weather (supports Query Params `?city=...&country=...`). |
+| **GET** | `/observations` | Retrieves all observations in **JSON** format. |
 | **GET** | `/observations/<id>` | Retrieves a specific observation by ID in **JSON**. |
-| **POST** | `/observations/<id>` | Updates the notes field of an observation. |
-| **POST** | `/observations/delete/<id>` | Deletes an observation from the database. |
+| **PUT** | `/observations/<id>` | Updates the notes field (JSON API). |
+| **DELETE** | `/observations/<id>` | Deletes an observation from the database (JSON API). |
 
 ## Project Structure
 ```plaintext
@@ -93,4 +94,3 @@ web_project/
 - **Database**: PostgreSQL
 - **DB Adapter**: Psycopg 3
 - **External API**: Open-Meteo (Geocoding & Weather)
-- **Library**: Requests (HTTP library)

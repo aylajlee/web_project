@@ -25,21 +25,21 @@
     <table> 
         <thead> 
             <tr> 
-                <th>ID</th> <th>City</th> <th>Country</th> <th>Lat</th> <th>Lon</th> 
-                <th>Temp(°C)</th> <th>Wind</th> <th>Time</th> <th>Notes</th> <th>Action</th> 
+                <th>ID</th> <th>City</th> <th>Country</th> <th>Latitude</th> <th>Longitude</th> 
+                <th>Temperature(°C)</th> <th>Windspeed(km/h)</th> <th>ObservationTime</th> <th>Notes</th> <th>Action</th> 
             </tr> 
         </thead> 
         <tbody> 
             {% for obs in observations %} 
             <tr> 
-                <td>{{ obs.id }}</td>
-                <td>{{ obs.city }}</td>
-                <td>{{ obs.country }}</td>
-                <td>{{ obs.latitude }}</td>
-                <td>{{ obs.longitude }}</td>
-                <td>{{ obs.temperature }}</td>
-                <td>{{ obs.windspeed }}</td>
-                <td>{{ obs.observation_time }}</td>
+                <td>{{ obs.id }}</td> 
+                <td>{{ obs.city }}</td> 
+                <td>{{ obs.country }}</td> 
+                <td>{{ obs.latitude }}</td> 
+                <td>{{ obs.longitude }}</td> 
+                <td>{{ obs.temperature_c }}</td> 
+                <td>{{ obs.windspeed_kmh }}</td> 
+                <td>{{ obs.observation_time }}</td> 
                 <td> 
                     <form action="/observations/{{ obs.id }}" method="POST"> 
                         <input type="text" name="notes" value="{{ obs.notes or '' }}"> 
