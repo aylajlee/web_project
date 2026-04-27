@@ -8,7 +8,7 @@ A Python application that fetches real-time weather data from the Open-Meteo API
 - **Geocoding**: Converts city and country names into coordinates automatically.
 - **Data Persistence**: Stores weather observations securely in a PostgreSQL database.
 - **ORM Pattern**: Follows object-oriented principles for database interaction.
-- **RESTful API**: Includes endpoints for creating, reading, and deleting weather records.
+- **Web Interface & API**: Includes server-side rendered pages and API endpoints for managing weather records.
 
 ## Installation
 
@@ -18,40 +18,48 @@ A Python application that fetches real-time weather data from the Open-Meteo API
 - Git
 
 ### Steps
+
 1. **Clone this repository:**
-   ```bash
-   git clone https://github.com/juyeonode/web_project.git
-   cd web_project
-   ```
+```bash
+git clone https://github.com/juyeonode/web_project.git
+cd web_project
+```
 
 2. **Install dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
+```bash
+pip install -r requirements.txt
+```
 
 3. **Set up your environment:**
-   Create a `.env` file in the root directory and configure your database credentials:
-   ```plaintext
-   DB_NAME=your_db_name
-   DB_USER=your_username
-   DB_PASSWORD=your_password
-   DB_HOST=localhost
-   DB_PORT=5432
-   ```
+
+Create a `.env` file in the root directory:
+
+```env
+DB_NAME=your_db_name
+DB_USER=your_username
+DB_PASSWORD=your_password
+DB_HOST=localhost
+DB_PORT=5432
+```
 
 4. **Initialize the database:**
-   Ensure your PostgreSQL server is running and the database specified in `.env` is created.
+
+Ensure your PostgreSQL server is running and the database specified in `.env` is created.
 
 ## Usage
-Run the application using the following command:
+
+Run the application:
 
 ```bash
 python main.py
 ```
 
-Once running, navigate to [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) to test the API endpoints directly using the Swagger UI interface.
+Then open your browser and go to:
+http://127.0.0.1:8000
+
 
 ## Example API Request
+
 To ingest weather data for a specific city:
 
 ```bash
@@ -60,19 +68,20 @@ POST /ingest?city=Seoul&country=South%20Korea
 
 ## Project Structure
 
-```text
+```plaintext
 web_project/
-├── main.py             # FastAPI application and routes
+├── main.py             # Flask application and routes
 ├── database.py         # Database manager and ORM models
 ├── templates/          # HTML templates for the web interface
 ├── requirements.txt    # Project dependencies
-├── .env                # Environment configuration (Hidden)
+├── .env                # Environment configuration (hidden)
 └── README.md           # Documentation
 ```
 
 ## Technologies Used
+
 - Python 3
-- FastAPI
+- Flask
 - PostgreSQL
 - Psycopg (Database adapter)
 - Open-Meteo API
