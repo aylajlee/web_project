@@ -2,3 +2,4 @@
 .projectvenv/
 __pycache__/
 *.pyc
+templates.zip
