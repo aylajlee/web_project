@@ -15,7 +15,7 @@ def client():
     with app.test_client() as client:
         yield client
 
-def test_index_route():
+def test_index_route(client):
     # Main Dashboard page(GET /)가 잘 뜨는지 확인
     response = client.get('/')
     # 응답코드 200(성공)인지 확인 
