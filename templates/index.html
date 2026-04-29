@@ -1,61 +1,89 @@
 {% extends 'base.html' %} 
+<!-- 상속: base.html의 기본레이아웃을 가져옴 -->
 
 {% block content %} 
+
 <style> 
+    /* CSS 스타일 설정 */
+
     body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; } 
+    /* 기본 폰트 및 여백 */
+
     .container { max-width: 1200px; margin: auto; } 
+    /* 전체 폭 제한 및 중앙 정렬 */
+
     .add-form { background: #f4f4f4; padding: 20px; border-radius: 8px; margin-bottom: 20px; } 
+    /* 검색창 배경 및 테두리 */
+
     table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9em; } 
+    /* 테이블 폭 100%, 선 겹침 방지 */
+
     th, td { padding: 8px; border: 1px solid #ddd; text-align: left; } 
+    /* 셀 내부 여백 및 테두리 설정 */
+
     th { background-color: #333; color: white; } 
+    /* 테이블 헤더 배경색 검정, 글자색 흰색 */
+
     input[type="text"] { padding: 5px; width: 100px; } 
+    /* 입력창 크기 및 여백 */
+
     button { padding: 5px 10px; cursor: pointer; } 
+    /* 버튼 크기 및 마우스 커서 설정 */
 </style> 
 
 <div class="container"> 
+    <!-- 도시 검색 및 추가 form -->
     <div class="add-form"> 
         <h3>Search & Add City</h3> 
-        <form action="/ingest" method="POST"> 
-            <input type="text" name="city" placeholder="City" required> 
-            <input type="text" name="country" placeholder="Country" required> 
-            <button type="submit">Fetch Weather Data</button> 
+        <form action="/ingest" method="POST"> <!-- 데이터를 서버의 /ingest 경로로 전송 -->
+            <input type="text" name="city" placeholder="City" required> <!-- 입력 조건 1. 도시 이름 -->
+            <input type="text" name="country" placeholder="Country" required> <!-- 입력 조건 2. 국가 이름 -->
+            <button type="submit">Fetch Weather Data</button> <!-- 클릭하면 서버에 날씨 데이터 요청 -->
         </form> 
     </div> 
     
+    <!-- 저장된 날씨 데이터 목록 테이블 -->
     <table> 
         <thead> 
             <tr> 
+                <!-- 컬럼 제목 -->
                 <th>ID</th> <th>City</th> <th>Country</th> <th>Latitude</th> <th>Longitude</th> 
                 <th>Temperature(°C)</th> <th>Windspeed(km/h)</th> <th>ObservationTime</th> <th>Notes</th> <th>Action</th> 
             </tr> 
         </thead> 
         <tbody> 
+            <!-- Flask(서버)로부터 받은 observations 리스트를 반복문으로 출력 -->
             {% for obs in observations %} 
             <tr> 
-                <td>{{ obs.id }}</td> 
-                <td>{{ obs.city }}</td> 
-                <td>{{ obs.country }}</td> 
-                <td>{{ obs.latitude }}</td> 
-                <td>{{ obs.longitude }}</td> 
-                <td>{{ obs.temperature_c }}</td> 
-                <td>{{ obs.windspeed_kmh }}</td> 
-                <td>{{ obs.observation_time }}</td> 
+                <td>{{ obs.id }}</td> <!-- DB 고유 ID -->
+                <td>{{ obs.city }}</td> <!-- 도시명 -->
+                <td>{{ obs.country }}</td> <!-- 국가명 -->
+                <td>{{ obs.latitude }}</td> <!-- 위도 -->
+                <td>{{ obs.longitude }}</td> <!-- 경도 -->
+                <td>{{ obs.temperature_c }}</td> <!-- 기온(섭씨) -->
+                <td>{{ obs.windspeed_kmh }}</td> <!-- 풍속(km/h) -->
+                <td>{{ obs.observation_time }}</td> <!-- 관측시간 -->
+                
+                <!-- notes 필드 수정 -->
                 <td> 
                     <form action="/observations/{{ obs.id }}" method="POST"> 
-                        <input type="text" name="notes" value="{{ obs.notes or '' }}"> 
+                        <input type="text" name="notes" value="{{ obs.notes or '' }}"> <!-- 기존 메모 표시 -->
                         <button type="submit">Update</button> 
                     </form> 
                 </td> 
+                
+                <!-- 삭제 폼: 해당 행의 데이터 삭제 -->
                 <td> 
                     <form action="/observations/delete/{{ obs.id }}" method="POST"> 
-                        <button type="submit" style="color: red;">Delete</button> 
+                        <button type="submit" style="color: red;">Delete</button> <!-- 삭제 버튼 강조를 위해 빨간색 적용 -->
                     </form> 
                 </td> 
             </tr> 
             {% else %} 
+            <!-- 데이터가 하나도 없을 때 표시 -->
             <tr><td colspan="10">No data found. Please add a city above!</td></tr> 
             {% endfor %} 
         </tbody> 
     </table> 
 </div> 
-{% endblock %}
+{% endblock %} 
