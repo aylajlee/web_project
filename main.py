@@ -1,4 +1,6 @@
-from routes import app 
+# from routes import app # 예시테이블 추가 
+from routes import app, db, get_weather_data
+from database import initialize_database
 
 # app = Flask(__name__)
 # db = DatabaseManager()
@@ -103,4 +105,6 @@ from routes import app
 
 # 서버 실행 
 if __name__ == "__main__":
+    # 앱 실행 전 DB테이블 생성 및 예시데이터 추가
+    initialize_database(db, get_weather_data)
     app.run(debug=True, port=8000)
