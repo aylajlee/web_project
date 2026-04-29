@@ -98,7 +98,7 @@ web_project/
 ```
 
 ## Technologies Used
-- **Language**: Python 3.x
+- **Language**: Python 3.9.7
 - **Web Framework**: Flask
 - **Database**: PostgreSQL
 - **DB Adapter**: Psycopg 3
